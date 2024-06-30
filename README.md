@@ -63,6 +63,51 @@ We aim to make the usage as stupid simple as possible, so there are only 2 expor
 }
 ```
 
+If you want support for multi-value attributes in the subject and issuer, pass
+the `multivalue: true` option to the parse functions. Doing so will yield this
+output where lists are used as values for the attributes.
+
+```elixir
+%{
+  extensions: %{
+    authorityInfoAccess: "CA Issuers - URI:http://certificates.godaddy.com/repository/gd_intermediate.crt\nOCSP - URI:http://ocsp.godaddy.com/\n",
+    authorityKeyIdentifier: "keyid:FD:AC:61:32:93:6C:45:D6:E2:EE:85:5F:9A:BA:E7:76:99:68:CC:E7\n",
+    basicConstraints: "CA:FALSE",
+    certificatePolicies: "Policy: 2.16.840.1.114413.1.7.23.1\n  CPS: http://certificates.godaddy.com/repository/",
+    crlDistributionPoints: "Full Name:\n URI:http://crl.godaddy.com/gds1-90.crl",
+    extendedKeyUsage: "TLS Web server authentication, TLS Web client authentication",
+    keyUsage: "Digital Signature, Key Encipherment",
+    subjectAltName: "DNS:acaline.com, DNS:www.acaline.com",
+    subjectKeyIdentifier: "E6:61:14:4E:5A:4B:51:0C:4E:6C:5E:3C:79:61:65:D4:BD:64:94:BE"
+  },
+  fingerprint: "FA:BE:B5:9B:ED:C2:2B:42:7E:B1:45:C8:9A:8A:73:16:4A:A0:10:09",
+  issuer: %{
+    C: ["US"],
+    CN: ["Go Daddy Secure Certification Authority"],
+    L: ["Scottsdale"],
+    O: ["GoDaddy.com, Inc."],
+    OU: ["http://certificates.godaddy.com/repository"],
+    ST: ["Arizona"],
+    aggregated: "/C=US/CN=Go Daddy Secure Certification Authority/L=Scottsdale/O=GoDaddy.com, Inc./OU=http://certificates.godaddy.com/repository/ST=Arizona",
+    emailAddress: []
+  },
+  not_after: 1398523877,
+  not_before: 1366987877,
+  serial_number: "27ACAE30B9F323",
+  signature_algorithm: "sha, rsa",
+  subject: %{
+    C: [],
+    CN: ["www.acaline.com"],
+    L: [],
+    O: [],
+    OU: ["Domain Control Validated"],
+    ST: [],
+    aggregated: "/CN=www.acaline.com/OU=Domain Control Validated",
+    emailAddress: []
+  }
+}
+```
+
 ### parse_der
 
 Parses a DER-encoded X509 certificate

@@ -68,21 +68,64 @@ defmodule EasySSL do
           OU: "Domain Control Validated",
           ST: nil,
           aggregated: "/CN=www.acaline.com/OU=Domain Control Validated",
-          emailAddress: nil
+          emailAddress: []
+        }
+      }
+
+      # Pass in a binary (from Base.decode64, or some other source) and parse
+      # with multivalues as part of subject and issuer attributes.
+      iex(1)> EasySSL.parse_der(<<...>>, multivalue: true)
+      %{
+        extensions: %{
+          authorityInfoAccess: "CA Issuers - URI:http://certificates.godaddy.com/repository/gd_intermediate.crt\\nOCSP - URI:http://ocsp.godaddy.com/\\n",
+          authorityKeyIdentifier: "keyid:FD:AC:61:32:93:6C:45:D6:E2:EE:85:5F:9A:BA:E7:76:99:68:CC:E7\\n",
+          basicConstraints: "CA:FALSE",
+          certificatePolicies: "Policy: 2.16.840.1.114413.1.7.23.1\\n  CPS: http://certificates.godaddy.com/repository/",
+          crlDistributionPoints: "Full Name:\\n URI:http://crl.godaddy.com/gds1-90.crl",
+          extendedKeyUsage: "TLS Web server authentication, TLS Web client authentication",
+          keyUsage: "Digital Signature, Key Encipherment",
+          subjectAltName: "DNS:acaline.com, DNS:www.acaline.com",
+          subjectKeyIdentifier: "E6:61:14:4E:5A:4B:51:0C:4E:6C:5E:3C:79:61:65:D4:BD:64:94:BE"
+        },
+        fingerprint: "FA:BE:B5:9B:ED:C2:2B:42:7E:B1:45:C8:9A:8A:73:16:4A:A0:10:09",
+        issuer: %{
+          C: ["US"],
+          CN: ["Go Daddy Secure Certification Authority"],
+          L: ["Scottsdale"],
+          O: ["GoDaddy.com, Inc."],
+          OU: ["http://certificates.godaddy.com/repository"],
+          ST: ["Arizona"],
+          aggregated: "/C=US/CN=Go Daddy Secure Certification Authority/L=Scottsdale/O=GoDaddy.com, Inc./OU=http://certificates.godaddy.com/repository/ST=Arizona",
+          emailAddress: []
+        },
+        not_after: 1398523877,
+        not_before: 1366987877,
+        serial_number: "27ACAE30B9F323",
+        signature_algorithm: "sha, rsa",
+        subject: %{
+          C: [],
+          CN: ["www.acaline.com"],
+          L: [],
+          O: [],
+          OU: ["Domain Control Validated"],
+          ST: [],
+          aggregated: "/CN=www.acaline.com/OU=Domain Control Validated",
+          emailAddress: []
         }
       }
   """
-  def parse_der(certificate_der, opts \\ [all_domains: false, serialize: false]) when is_binary(certificate_der) do
+  def parse_der(certificate_der, opts \\ [all_domains: false, serialize: false, multivalue: false]) when is_binary(certificate_der) do
     cert = :public_key.pkix_decode_cert(certificate_der, :otp) |> get_field(:tbsCertificate)
 
     serialized_certificate = %{}
       |> Map.put(:fingerprint, certificate_der |> fingerprint_cert)
       |> Map.put(:serial_number, cert |> get_field(:serialNumber) |> Integer.to_string(16))
       |> Map.put(:signature_algorithm, cert |> parse_signature_algo)
-      |> Map.put(:subject, cert |> parse_rdnsequence(:subject))
-      |> Map.put(:issuer, cert |> parse_rdnsequence(:issuer))
+      |> Map.put(:subject, cert |> parse_rdnsequence(:subject, multivalue: opts[:multivalue]))
+      |> Map.put(:issuer, cert |> parse_rdnsequence(:issuer, multivalue: opts[:multivalue]))
       |> Map.put(:extensions, cert |> parse_extensions)
       |> Map.merge(parse_expiry(cert))
+
 
     Enum.reduce(opts, serialized_certificate, fn {option, flag}, serialized_certificate ->
       case option do
@@ -93,6 +136,7 @@ defmodule EasySSL do
         :serialize when flag == true ->
           serialized_certificate
             |> Map.put(:as_der, Base.encode64(certificate_der))
+
         _ -> serialized_certificate
       end
     end)
@@ -168,12 +212,54 @@ defmodule EasySSL do
           OU: "Domain Control Validated",
           ST: nil,
           aggregated: "/CN=www.acaline.com/OU=Domain Control Validated",
-          emailAddress: nil
+          emailAddress: []
+        }
+      }
+
+      # Pass in a binary (from Base.decode64, or some other source) and parse
+      # with multivalues as part of subject and issuer attributes.
+      iex(1)> EasySSL.parse_pem("-----BEGIN CERTIFICATE-----\\nMII...", multivalue: true)
+      %{
+        extensions: %{
+          authorityInfoAccess: "CA Issuers - URI:http://certificates.godaddy.com/repository/gd_intermediate.crt\\nOCSP - URI:http://ocsp.godaddy.com/\\n",
+          authorityKeyIdentifier: "keyid:FD:AC:61:32:93:6C:45:D6:E2:EE:85:5F:9A:BA:E7:76:99:68:CC:E7\\n",
+          basicConstraints: "CA:FALSE",
+          certificatePolicies: "Policy: 2.16.840.1.114413.1.7.23.1\\n  CPS: http://certificates.godaddy.com/repository/",
+          crlDistributionPoints: "Full Name:\\n URI:http://crl.godaddy.com/gds1-90.crl",
+          extendedKeyUsage: "TLS Web server authentication, TLS Web client authentication",
+          keyUsage: "Digital Signature, Key Encipherment",
+          subjectAltName: "DNS:acaline.com, DNS:www.acaline.com",
+          subjectKeyIdentifier: "E6:61:14:4E:5A:4B:51:0C:4E:6C:5E:3C:79:61:65:D4:BD:64:94:BE"
+        },
+        fingerprint: "FA:BE:B5:9B:ED:C2:2B:42:7E:B1:45:C8:9A:8A:73:16:4A:A0:10:09",
+        issuer: %{
+          C: ["US"],
+          CN: ["Go Daddy Secure Certification Authority"],
+          L: ["Scottsdale"],
+          O: ["GoDaddy.com, Inc."],
+          OU: ["http://certificates.godaddy.com/repository"],
+          ST: ["Arizona"],
+          aggregated: "/C=US/CN=Go Daddy Secure Certification Authority/L=Scottsdale/O=GoDaddy.com, Inc./OU=http://certificates.godaddy.com/repository/ST=Arizona",
+          emailAddress: []
+        },
+        not_after: 1398523877,
+        not_before: 1366987877,
+        serial_number: "27ACAE30B9F323",
+        signature_algorithm: "sha, rsa",
+        subject: %{
+          C: [],
+          CN: ["www.acaline.com"],
+          L: [],
+          O: [],
+          OU: ["Domain Control Validated"],
+          ST: [],
+          aggregated: "/CN=www.acaline.com/OU=Domain Control Validated",
+          emailAddress: []
         }
       }
 """
   def parse_pem(cert_charlist) when is_list(cert_charlist) do parse_pem(cert_charlist |> to_string) end
-  def parse_pem(cert_pem, opts \\ [all_domains: false, return_base64: false]) do
+  def parse_pem(cert_pem, opts \\ [all_domains: false, return_base64: false, multivalue: false]) do
     cert_regex = ~r/^\-{5}BEGIN\sCERTIFICATE\-{5}\n(?<certificate>[^\-]+)\-{5}END\sCERTIFICATE\-{5}/
     match = Regex.named_captures(cert_regex, cert_pem)
 
@@ -276,15 +362,15 @@ defmodule EasySSL do
     |> Enum.join(", ")
   end
 
-  defp parse_rdnsequence(cert, field) do
+  defp parse_rdnsequence(cert, field, opts) do
     rdnsequence = %{
-      :CN => nil,
-      :C => nil,
-      :L => nil,
-      :ST => nil,
-      :O => nil,
-      :OU => nil,
-      :emailAddress => nil
+      :CN => [],
+      :C => [],
+      :L => [],
+      :ST => [],
+      :O => [],
+      :OU => [],
+      :emailAddress => []
     }
 
     {:rdnSequence, rdnsequence_attribute} = cert |> get_field(field)
@@ -304,13 +390,34 @@ defmodule EasySSL do
       end
 
       case attr_atom do
-        nil -> rdnsequence
-        _ -> %{rdnsequence | attr_atom => attribute_value |> coerce_to_string |> to_string}
+        nil ->
+          rdnsequence
+        _ ->
+          attribute_value = attribute_value |> coerce_to_string |> to_string
+          new_attribute_values = [ attribute_value | rdnsequence[attr_atom] ]
+          %{rdnsequence | attr_atom => new_attribute_values}
       end
     end)
 
-    Map.put(rdnsequence, :aggregated, rdnsequence |> aggregate_rdnsequence)
+    case opts[:multivalue] do
+      true ->
+        # Reverse order of multi attribute values to honor order in cert
+        rdnsequence = Map.new(rdnsequence, fn {k, v} -> {k, Enum.reverse(v)} end)
+        Map.put(rdnsequence, :aggregated, rdnsequence |> aggregate_rdnsequence)
 
+      _ ->
+        # Save only the last value, then aggregate into a string
+        aggregated = Map.new(rdnsequence, fn
+          {k, [h|_]} -> {k, [h]}
+          {k, []}    -> {k, []}
+        end) |> aggregate_rdnsequence
+
+        # Change list values to single elements, then add aggregated string
+        Map.new(rdnsequence, fn
+          {k, [h|_]} -> {k, h}
+          {k, []}    -> {k, nil}
+        end) |> Map.put(:aggregated, aggregated)
+    end
   end
 
   defp parse_crl_distribution_points(crl_distribution_points)
@@ -335,8 +442,8 @@ defmodule EasySSL do
 
   defp aggregate_rdnsequence(rdnsequence) do
     [ :C, :CN, :L, :O, :OU, :ST, :emailAddress ]
-    |> Enum.filter(& rdnsequence[&1] != nil)
-    |> Enum.map(fn k -> (k |> to_string) <> "=" <> (rdnsequence[k] |> to_string) end)
+    |> Enum.filter(& !Enum.empty?(rdnsequence[&1]))
+    |> Enum.map(fn k -> (k |> to_string) <> "=" <> (rdnsequence[k] |> Enum.join(", ")) end)
     |> Enum.join("/")
     |> String.replace_prefix("", "/")
   end

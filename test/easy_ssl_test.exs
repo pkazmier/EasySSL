@@ -122,4 +122,60 @@ defmodule EasySSLTest do
     assert get_in(cert, [:subject, :emailAddress]) == "mailbox@domain.tld"
     assert get_in(cert, [:issuer, :emailAddress]) == "mailbox@domain.tld"
   end
+
+  test "parses attributes in subject in backwards compat manner" do
+    cert = File.read!(@der_cert_dir <> "www.espn.com.der") |> EasySSL.parse_der()
+    assert Map.has_key?(cert, :subject)
+
+    # Attributes are parsed as before as single values.
+    assert cert.subject[:C] == "US"
+
+    # The espn cert subject has zero OU attributes. Using parse_der without
+    # the multivalue option should result in same behavior pre-support for
+    # multivalue. I.e. the OU attribute should be nil.
+    assert cert.subject[:OU] == nil
+  end
+
+  test "parses attributes in subject correctly with multivalue option" do
+    cert = File.read!(@der_cert_dir <> "www.espn.com.der") |> EasySSL.parse_der(multivalue: true)
+    assert Map.has_key?(cert, :subject)
+
+    # Attributes are parsed as before as single values.
+    assert cert.subject[:C] == ["US"]
+
+    # The espn cert subject has zero OU attributes. Using parse_der without
+    # the multivalue option should result in same behavior pre-support for
+    # multivalue. I.e. the OU attribute should be nil.
+    assert cert.subject[:OU] == []
+  end
+
+  test "parses issuer with multiple OU values in backwards compat manner" do
+    cert = File.read!(@der_cert_dir <> "www.espn.com.der") |> EasySSL.parse_der()
+    assert Map.has_key?(cert, :issuer)
+
+    # The espn cert issuer has two OU attributes. Using parse_der without the
+    # multivalue option should result in same behavior pre-support for
+    # multivalue. I.e. the first OU attribute is discarded.
+    assert cert.issuer[:OU] == "(c) 2012 Entrust, Inc. - for authorized use only"
+
+    # Likewise for aggregated, it should only contain the 2nd attribute.
+    assert cert.issuer.aggregated == "/C=US/CN=Entrust Certification Authority - L1K/O=Entrust, Inc./OU=(c) 2012 Entrust, Inc. - for authorized use only"
+  end
+
+  test "parses issuer with multiple OU values correctly with multivalue option" do
+    cert = File.read!(@der_cert_dir <> "www.espn.com.der") |> EasySSL.parse_der(multivalue: true)
+    assert Map.has_key?(cert, :issuer)
+
+    # The espn cert issuer has two OU attributes. Using parse_der with the
+    # multivalue option should result in a list containing both in the order
+    # they appear in the cert.
+    assert cert.issuer[:OU] == [
+      "See www.entrust.net/legal-terms",
+      "(c) 2012 Entrust, Inc. - for authorized use only"]
+
+    # Likewise for aggregated, it should only contain the both attribute
+    # values separated by a comma.
+    assert cert.issuer.aggregated == "/C=US/CN=Entrust Certification Authority - L1K/O=Entrust, Inc./OU=See www.entrust.net/legal-terms, (c) 2012 Entrust, Inc. - for authorized use only"
+  end
+
 end
