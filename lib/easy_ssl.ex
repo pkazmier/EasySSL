@@ -334,14 +334,11 @@ defmodule EasySSL do
   end
 
   defp aggregate_rdnsequence(rdnsequence) do
-    rdnsequence
-      # Filter out empty values
-      |> Enum.filter(fn {_, v} -> v != nil end)
-        # Turn everything in to a string so C=blah.com
-      |> Enum.map(fn {k, v} -> (k |> to_string) <> "=" <> (v |> to_string) end)
-        # Add a buffer to the front to
-      |> Enum.join("/")
-      |> String.replace_prefix("", "/")
+    [ :C, :CN, :L, :O, :OU, :ST, :emailAddress ]
+    |> Enum.filter(& rdnsequence[&1] != nil)
+    |> Enum.map(fn k -> (k |> to_string) <> "=" <> (rdnsequence[k] |> to_string) end)
+    |> Enum.join("/")
+    |> String.replace_prefix("", "/")
   end
 
   defp parse_extensions(cert) do
