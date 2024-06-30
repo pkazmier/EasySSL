@@ -259,7 +259,7 @@ defmodule EasySSL do
       }
 """
   def parse_pem(cert_charlist) when is_list(cert_charlist) do parse_pem(cert_charlist |> to_string) end
-  def parse_pem(cert_pem, opts \\ [all_domains: false, return_base64: false, multivalue: false]) do
+  def parse_pem(cert_pem, opts \\ [all_domains: false, serialize: false, multivalue: false]) do
     cert_regex = ~r/^\-{5}BEGIN\sCERTIFICATE\-{5}\n(?<certificate>[^\-]+)\-{5}END\sCERTIFICATE\-{5}/
     match = Regex.named_captures(cert_regex, cert_pem)
 
