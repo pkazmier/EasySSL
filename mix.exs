@@ -27,6 +27,7 @@ defmodule EasySSL.MixProject do
       {:excoveralls, "~> 0.8", only: :test},
       {:ex_doc, "~> 0.16", only: :dev, runtime: false},
       {:poison, "~> 2.0", only: :test},
+      {:ssl_verify_fun, "~> 1.1", manager: :rebar3, override: true}
     ]
   end
 
