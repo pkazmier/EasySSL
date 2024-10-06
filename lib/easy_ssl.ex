@@ -142,6 +142,32 @@ defmodule EasySSL do
     end)
   end
 
+  @doc """
+  Takes in an [`otp` certificate][1] and returns a map of the parsed certificate.
+
+  [1]: https://www.erlang.org/doc/apps/public_key/public_key_records.html#pkix-certificates
+  """
+  def parse_otp(cert, opts \\ [all_domains: false, multivalue: false]) do
+    cert = get_field(cert, :tbsCertificate)
+
+    serialized_certificate = %{}
+      |> Map.put(:serial_number, cert |> get_field(:serialNumber) |> Integer.to_string(16))
+      |> Map.put(:signature_algorithm, cert |> parse_signature_algo)
+      |> Map.put(:subject, cert |> parse_rdnsequence(:subject, multivalue: opts[:multivalue]))
+      |> Map.put(:issuer, cert |> parse_rdnsequence(:issuer, multivalue: opts[:multivalue]))
+      |> Map.put(:extensions, cert |> parse_extensions)
+      |> Map.merge(parse_expiry(cert))
+
+    Enum.reduce(opts, serialized_certificate, fn {option, flag}, serialized_certificate ->
+      case option do
+        :all_domains when flag == true ->
+          serialized_certificate
+            |> Map.put(:all_domains, get_all_domain_names(cert, serialized_certificate))
+        _ -> serialized_certificate
+      end
+    end)
+  end
+
   def get_all_domain_names(cert, serialized_cert) do
     domain_names = MapSet.new()
 
